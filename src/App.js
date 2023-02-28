@@ -43,10 +43,9 @@ function App() {
   const dataId = useRef (0);
 
   const getData =async() =>{
-    const res = await fetch ("https://jsonplaceholder.typicode.com/comments").then((res) => res.json())
-    console.log(res);
+    const res = await fetch ("https://jsonplaceholder.typicode.com/comments").then((res) => res.json());
 
-    const iniData = res.slice(0,20).map((it)=>{
+    const initData = res.slice(0, 20).map((it)=>{
       return {
         autor:it.email,
         content:it.body,
@@ -55,7 +54,7 @@ function App() {
         id:dataId.current++ 
       }
     })
-    setData(iniData);
+    setData(initData);
   }
 
   useEffect(()=>{
