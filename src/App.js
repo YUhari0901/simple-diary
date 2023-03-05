@@ -1,8 +1,8 @@
-import React, { useMemo, useEffect, useRef, useState } from 'react';
+import React, {useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import './App.css';
 import DiaryEditor from './DiaryEditor';
 import DiaryList from './DiaryList';
-import OptimizeTest from './OptimizeTest';
+
 
 // https:jsonplaceholder.typicode.com/comments
 
@@ -37,9 +37,35 @@ import OptimizeTest from './OptimizeTest';
 //   created_date: new Date().getTime(),
 // }
 // ]
+const reducer = (state,action) =>{
+  switch(action.type){
+    case 'INIT':{
+      return action.data
+    }
+    case 'CREATE':{
+      const created_date =new Date().getTime();
+      const newItem={
+        ...action.data,
+        created_date
+      }
+      return [newItem, ...state]
+    }
+    case 'REMOVE':{
+      return state.filter((it) => it.id !== action.targetId);
+    }
+    case 'EDIT': {
+      return state.map ((it) =>  it.id === action.targetId ? {...it,content:action.newContent}: it)
+    }
+    default : 
+    return state; 
+  }
+}
 
 function App() {
-  const [data,setData]= useState ([])
+  // const [data,setData]= useState ([])
+
+  const [data, dispatch]= useReducer(reducer, [])
+
 
   const dataId = useRef (0);
 
@@ -53,41 +79,31 @@ function App() {
         emotion:Math.floor(Math.random()*5)+1,
         created_date:new Date().getTime(),
         id:dataId.current++ 
-      }
-    })
-    setData(initData);
-  }
+      };
+    });
+    dispatch({type:'INIT', data: initData});
+  };
 
   useEffect(()=>{
     getData();
   },[])
 
 
-  const onCreate = (autor,content,emotion) => {
+  const onCreate = useCallback((autor,content,emotion) => {
+    dispatch({type:'CREATE', data:{autor,content,emotion,id:dataId.current}})
     const created_date = new Date().getTime();
-    const newItem ={
-      autor,
-      content,
-      emotion,
-      created_date,
-      id:dataId.current,
-    }
     dataId.current+=1;
-    setData([newItem,...data])
-  };
 
-  const onRemove = (targetId) => {
-  const newDiaryList = data.filter((it) => it.id !== targetId);
-  setData(newDiaryList);
-  }
+  },[]);
 
-  const onEdit = (targetId,newContent) =>{
-    setData (
-      data.map((it) => 
-        it.id === targetId ? {...it,content:newContent}: it
-      )
-    )
-  }
+  const onRemove = useCallback((targetId) => {
+    dispatch ({type:'REMOVE', targetId})
+    },[])
+
+  const onEdit = useCallback((targetId,newContent) =>{
+    dispatch ({type:'EDIT', targetId, newContent})
+   },[])
+
 const getDiaryAnalysis = useMemo(() => 
 {
   console.log("일기 분석 시작!");
@@ -96,14 +112,13 @@ const getDiaryAnalysis = useMemo(() =>
   const badCount =data.length -goodCount;
   const goodRation = (goodCount / data.length) * 100;
   return {goodCount,badCount,goodRation};
-}, [data.length]);
+},[data.length]);
 
 const {goodCount, badCount,goodRation } = getDiaryAnalysis;
 
 
   return (
     <div className="App">
-     <OptimizeTest/>
      <DiaryEditor onCreate={onCreate}/>
      <div>전체 일기: {data.length}</div>
      <div>기분 좋은 일기 개수: {goodCount}</div>
